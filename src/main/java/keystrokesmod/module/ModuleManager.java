@@ -129,6 +129,8 @@ public class ModuleManager {
     public static Regen regen;
     public static ChatAI chatAI;
     public static keystrokesmod.module.impl.render.ArrayList arrayList;
+    public static InvMove invMove;
+    public static MotionCamera motionCamera;
 
     static List<Module> modules = new ArrayList<>();
 
@@ -204,7 +206,7 @@ public class ModuleManager {
 
         // movement
         this.addModule(fly = new Fly());
-        this.addModule(new InvMove());
+        this.addModule(invMove = new InvMove());
         this.addModule(keepSprint = new KeepSprint());
         this.addModule(longJump = new LongJump());
         this.addModule(noSlow = new NoSlow());
@@ -301,6 +303,7 @@ public class ModuleManager {
         this.addModule(new KillMessage());
         this.addModule(clientTheme = new ClientTheme());
         this.addModule(arrayList = new keystrokesmod.module.impl.render.ArrayList());
+        this.addModule(motionCamera = new MotionCamera());
 
         // world
         this.addModule(antiBot = new AntiBot());
