@@ -76,10 +76,10 @@ public class Scaffold extends IAutoClicker {
     private final ButtonSetting rotateWithMovement;
     private final ButtonSetting staticYaw;
     private final ButtonSetting reserveYaw;
-    private final ButtonSetting staticPitch;
+    public final ButtonSetting staticPitch;
     private final ButtonSetting staticPitchOnJump;
     private final SliderSetting straightPitch;
-    private final SliderSetting diagonalPitch;
+    public final SliderSetting diagonalPitch;
     private final ModeSetting precision;
     private final ButtonSetting autoSwap;
     private final ButtonSetting useBiggestStack;
@@ -99,6 +99,7 @@ public class Scaffold extends IAutoClicker {
     private final ButtonSetting esp;
     private final ModeSetting theme;
     private final ButtonSetting raytrace;
+    private final ButtonSetting dot;
     private final SliderSetting alpha;
     private final ButtonSetting outline;
     private final ButtonSetting shade;
@@ -109,6 +110,9 @@ public class Scaffold extends IAutoClicker {
     public MovingObjectPosition placeBlock;
     public float placeYaw;
     public float placePitch = 85;
+
+    public boolean isMovingStraight;
+
     public int at;
     public int index;
     public boolean rmbDown;
@@ -151,7 +155,7 @@ public class Scaffold extends IAutoClicker {
                 .add(new SnapRotation("Snap", this))
                 .setDefaultValue("Backwards")
         );
-        this.registerSetting(aimSpeed = new SliderSetting("Aim speed", 20, 5, 20, 0.1, new ModeOnly(rotation, 0).reserve()));
+        this.registerSetting(aimSpeed = new SliderSetting("Aim speed", 20, 5, 180, 1, new ModeOnly(rotation, 0).reserve()));
         this.registerSetting(moveFix = new ButtonSetting("MoveFix", false, new ModeOnly(rotation, 0).reserve()));
         this.registerSetting(motion = new SliderSetting("Motion", 1.0, 0.5, 1.2, 0.01, () -> !moveFix.isToggled()));
         this.registerSetting(strafe = new SliderSetting("Strafe", 0, 0, 90, 5));
@@ -212,6 +216,7 @@ public class Scaffold extends IAutoClicker {
         this.registerSetting(esp = new ButtonSetting("ESP", false));
         this.registerSetting(theme = new ModeSetting("Theme", Theme.themes, 0));
         this.registerSetting(raytrace = new ButtonSetting("Raytrace", false, esp::isToggled));
+        this.registerSetting(dot = new ButtonSetting("Dot", false, () -> esp.isToggled() && raytrace.isToggled()));
         this.registerSetting(alpha = new SliderSetting("Alpha", 200, 0, 255, 1, () -> esp.isToggled() && raytrace.isToggled()));
         this.registerSetting(outline = new ButtonSetting("Outline", true, esp::isToggled));
         this.registerSetting(shade = new ButtonSetting("Shade", false, esp::isToggled));
@@ -349,15 +354,17 @@ public class Scaffold extends IAutoClicker {
         if (reserveYaw.isToggled())
             yaw += 180;
 
-        if (staticPitch.isToggled() && (staticPitchOnJump.isToggled() || mc.thePlayer.onGround)) {
-            double direction = MoveUtil.direction();
-            double movingYaw = Math.round(direction / 45) * 45;
-            boolean isMovingStraight = movingYaw % 90 == 0f;
+        if (staticPitch.isToggled()){
+            if(staticPitchOnJump.isToggled() || mc.thePlayer.onGround){
+                double direction = MoveUtil.direction();
+                double movingYaw = Math.round(direction / 45) * 45;
+                isMovingStraight = movingYaw % 90 == 0f;
 
-            if (isMovingStraight)
-                pitch = (float) straightPitch.getInput();
-            else
-                pitch = (float) diagonalPitch.getInput();
+                if (isMovingStraight)
+                    pitch = (float) straightPitch.getInput();
+                else
+                    pitch = (float) diagonalPitch.getInput();
+            }
         }
 
         final float finalYaw = instant ? yaw : AimSimulator.rotMove(yaw, lastYaw, (float) aimSpeed.getInput());
@@ -821,6 +828,11 @@ public class Scaffold extends IAutoClicker {
 
         if (raytrace.isToggled()) {
             MovingObjectPosition hitResult = mc.objectMouseOver;
+
+            if(dot.isToggled()) {
+                RenderUtils.drawDot(new keystrokesmod.script.classes.Vec3(hitResult.hitVec), 0.05, 0xFF0670BE);
+            }
+
             if (hitResult.typeOfHit == MovingObjectPosition.MovingObjectType.MISS) {
                 hitResult = lastESPRaytrace;
             } else {
