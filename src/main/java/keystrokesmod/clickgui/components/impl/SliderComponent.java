@@ -20,7 +20,7 @@ public class SliderComponent extends Component {
     private int o;
     private int x;
     private int y;
-    private boolean d = false;
+    private boolean dragging = false;
     private double w;
 
     public SliderComponent(SliderSetting sliderSetting, ModuleComponent moduleComponent, int o) {
@@ -73,7 +73,7 @@ public class SliderComponent extends Component {
         this.x = this.parent.categoryComponent.getX();
         double d = Math.min(this.parent.categoryComponent.gw() - 8, Math.max(0, x - this.x));
         this.w = (double) (this.parent.categoryComponent.gw() - 8) * (this.sliderSetting.getInput() - this.sliderSetting.getMin()) / (this.sliderSetting.getMax() - this.sliderSetting.getMin());
-        if (this.d) {
+        if (this.dragging) {
             if (d == 0.0D) {
                 this.sliderSetting.setValue(this.sliderSetting.getMin());
                 if (this.sliderSetting.getInput() != this.sliderSetting.getMin() && ModuleManager.hud != null && ModuleManager.hud.isEnabled() && !ModuleManager.organizedModules.isEmpty()) {
@@ -109,17 +109,17 @@ public class SliderComponent extends Component {
         if (this.getSetting() != null && !this.getSetting().isVisible()) return;
 
         if (this.u(x, y) && b == 0 && this.parent.po) {
-            this.d = true;
+            this.dragging = true;
         }
 
         if (this.i(x, y) && b == 0 && this.parent.po) {
-            this.d = true;
+            this.dragging = true;
         }
 
     }
 
     public void mouseReleased(int x, int y, int m) {
-        this.d = false;
+        this.dragging = false;
     }
 
     public boolean u(int x, int y) {
@@ -131,6 +131,6 @@ public class SliderComponent extends Component {
     }
 
     public void onGuiClosed() {
-        this.d = false;
+        this.dragging = false;
     }
 }

@@ -1,5 +1,6 @@
 package keystrokesmod.module.impl.other;
 
+import com.mojang.realmsclient.gui.ChatFormatting;
 import keystrokesmod.event.MoveInputEvent;
 import keystrokesmod.event.PreMotionEvent;
 import keystrokesmod.event.PreUpdateEvent;
@@ -13,15 +14,21 @@ import keystrokesmod.module.setting.impl.SliderSetting;
 import keystrokesmod.module.setting.utils.ModeOnly;
 import keystrokesmod.utility.MoveUtil;
 import keystrokesmod.utility.RotationUtils;
+import keystrokesmod.utility.Theme;
+import keystrokesmod.utility.Utils;
+import keystrokesmod.utility.render.RenderUtils;
 import keystrokesmod.utility.aim.AimSimulator;
 import lombok.Getter;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.MathHelper;
+import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.Vec3;
+import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,9 +48,11 @@ public final class RotationHandler extends Module {
     private static float prevRotationPitch;
     @Getter
     private static boolean isSet = false;
+    private static boolean drawDot = false;
     private static MoveFix moveFix = MoveFix.None;
     private final ModeSetting smoothBack = new ModeSetting("Smooth back", new String[]{"None", "Default"}, 0);
-    private final SliderSetting aimSpeed = new SliderSetting("Aim speed", 5, 1, 15, 0.1, new ModeOnly(smoothBack, 1));
+    private final SliderSetting aimSpeed = new SliderSetting("Aim speed", 5, 1, 180, 0.1, new ModeOnly(smoothBack, 1));
+    public static final ButtonSetting dot = new ButtonSetting("Silent aim dot", false);
 
     public RotationHandler() {
         super("RotationHandler", category.other);
@@ -51,6 +60,7 @@ public final class RotationHandler extends Module {
         this.registerSetting(new DescriptionSetting("Classic"));
         this.registerSetting(rotateBody, fullBody, randomYawFactor);
         this.registerSetting(new DescriptionSetting("Debug"));
+        this.registerSetting(dot);
         this.canBeEnabled = false;
     }
 
@@ -125,19 +135,32 @@ public final class RotationHandler extends Module {
     public void onPreUpdate(PreUpdateEvent event) {
         prevRotationYaw = getRotationYaw();
         prevRotationPitch = getRotationPitch();
+
+
         if (isSet && mc.currentScreen == null) {
+
+            if(dot.isToggled()) {
+                drawDot = true;
+            }
             float viewYaw = RotationUtils.normalize(mc.thePlayer.rotationYaw);
             float viewPitch = RotationUtils.normalize(mc.thePlayer.rotationPitch);
+
+            float serverYaw = RotationUtils.normalize(getRotationYaw());
+            float serverPitch = RotationUtils.normalize(getRotationPitch());
+
             switch ((int) smoothBack.getInput()) {
                 case 0:
                     rotationYaw = null;
                     rotationPitch = null;
                     break;
                 case 1:
-                    setRotationYaw(AimSimulator.rotMove(viewYaw, getRotationYaw(), (float) aimSpeed.getInput()));
-                    setRotationPitch(AimSimulator.rotMove(viewPitch, getRotationPitch(), (float) aimSpeed.getInput()));
+                    setRotationYaw(AimSimulator.rotMove(viewYaw, serverYaw, (float) aimSpeed.getInput()));
+                    setRotationPitch(AimSimulator.rotMove(viewPitch, serverPitch, (float) aimSpeed.getInput()));
                     break;
             }
+        }
+        else if(dot.isToggled()){
+            drawDot = false;
         }
 
         if (AimSimulator.yawEquals(getRotationYaw(), mc.thePlayer.rotationYaw)) rotationYaw = null;
@@ -154,6 +177,8 @@ public final class RotationHandler extends Module {
             movementYaw = null;
             moveFix = null;
         }
+
+
     }
 
     /**
@@ -221,6 +246,14 @@ public final class RotationHandler extends Module {
             event.setPitch(pitch);
             // RenderUtils.renderPitch handle this
 //            mc.thePlayer.renderPitchHead = pitch;
+        }
+    }
+
+    @SubscribeEvent
+    public void onRenderWorld(RenderWorldLastEvent e) {
+        if(drawDot) {
+            MovingObjectPosition raycast = RotationUtils.rayTraceCustom(mc.playerController.getBlockReachDistance(), prevRotationYaw, prevRotationPitch);
+            RenderUtils.drawDot(new keystrokesmod.script.classes.Vec3(raycast.hitVec), 0.1, 0xFFDF4B80);
         }
     }
 
